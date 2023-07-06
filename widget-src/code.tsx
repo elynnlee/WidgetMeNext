@@ -109,6 +109,11 @@ function Widget() {
     displayOrder.set(nextKey.toString(), currentUser);
   };
 
+  const removeUserFromDisplay = () => {
+    const smallestKey = Math.min(...displayOrder.keys().map(parseFloat));
+    displayOrder.delete(smallestKey.toString());
+  };
+
   const renderTeammatePhotoBubbles = (syncedMap: SyncedMap) => {
     const sortedKeys = parseAndSortKeys(syncedMap);
 
@@ -144,6 +149,13 @@ function Widget() {
       </AutoLayout>
       <AutoLayout direction="vertical" spacing={20}>
         {renderTeammatePhotoBubbles(displayOrder)}
+      </AutoLayout>
+      <AutoLayout
+        direction="vertical"
+        spacing={20}
+        horizontalAlignItems="center"
+      >
+        <Button text="Next" onClick={removeUserFromDisplay} />
       </AutoLayout>
     </AutoLayout>
   );
