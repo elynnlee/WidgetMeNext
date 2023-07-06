@@ -117,15 +117,28 @@ function Widget() {
   const renderTeammatePhotoBubbles = (syncedMap: SyncedMap) => {
     const sortedKeys = parseAndSortKeys(syncedMap);
 
+    // skip the first user because we'll render them separately
+    let isFirstUser = true;
+
     return sortedKeys.map((key) => {
       const user = displayOrder.get(key);
 
       if (user) {
+        if (isFirstUser) {
+          isFirstUser = false; // Mark the first user as visited
+          return null; // Skip the first user
+        }
+
         return <TeammatePhotoBubble key={key} figmaUser={user} />;
       }
 
       return null;
     });
+  };
+
+  const getFirstUserKey = (syncedMap: SyncedMap) => {
+    const smallestKey = Math.min(...displayOrder.keys().map(parseFloat));
+    return smallestKey.toString();
   };
 
   return (
@@ -139,23 +152,30 @@ function Widget() {
       cornerRadius={10}
       padding={{ top: 40, left: 20, right: 20, bottom: 40 }}
     >
+      {displayOrder.size > 0 && (
+        <AutoLayout
+          direction="vertical"
+          spacing={20}
+          horizontalAlignItems="center"
+        >
+          <TeammatePhotoBubble
+            key={getFirstUserKey(displayOrder)}
+            figmaUser={displayOrder.get(getFirstUserKey(displayOrder))}
+          />
+          <Button text="Next" onClick={removeUserFromDisplay} />
+        </AutoLayout>
+      )}
+      {displayOrder.size > 1 && (
+        <AutoLayout direction="vertical" spacing={20}>
+          {renderTeammatePhotoBubbles(displayOrder)}
+        </AutoLayout>
+      )}
       <AutoLayout
         direction="vertical"
         spacing={20}
         horizontalAlignItems="center"
-        padding={{ top: 0, left: 0, right: 0, bottom: 15 }}
       >
-        <Button text="Add me" onClick={addUserToDisplay} />
-      </AutoLayout>
-      <AutoLayout direction="vertical" spacing={20}>
-        {renderTeammatePhotoBubbles(displayOrder)}
-      </AutoLayout>
-      <AutoLayout
-        direction="vertical"
-        spacing={20}
-        horizontalAlignItems="center"
-      >
-        <Button text="Next" onClick={removeUserFromDisplay} />
+        <Button text="Add me to the list" onClick={addUserToDisplay} />
       </AutoLayout>
     </AutoLayout>
   );
