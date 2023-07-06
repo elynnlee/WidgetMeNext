@@ -90,7 +90,7 @@ function Widget() {
   const displayOrder = useSyncedMap("displayOrder");
   const userIdToUser = useSyncedMap("idToUser");
 
-  const debugMode = true;
+  const debugMode = false;
 
   const addUserToDisplay = () => {
     const currentUser = figma.currentUser;
