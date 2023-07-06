@@ -69,6 +69,15 @@ function TeammatePhotoBubble({
   );
 }
 
+function isUserInMap(userMap: SyncedMap, user: User): boolean {
+  for (const existingUser of userMap.values()) {
+    if (existingUser.id === user.id) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function parseAndSortKeys(map: SyncedMap<any>) {
   const parsedKeys = Array.from(map.keys(), parseFloat).filter(
     (key) => !isNaN(key)
@@ -78,14 +87,19 @@ function parseAndSortKeys(map: SyncedMap<any>) {
 }
 
 function Widget() {
-  const [users, setUsers] = useSyncedState("users", []);
-  const [activeTeammate, setActive] = useSyncedState("activeTeammate", null);
   const displayOrder = useSyncedMap("displayOrder");
   const userIdToUser = useSyncedMap("idToUser");
+
+  const debugMode = true;
 
   const addUserToDisplay = () => {
     const currentUser = figma.currentUser;
     if (!currentUser) {
+      return;
+    }
+
+    // if not in debug mode, only allow adding yourself to the queue once
+    if (!debugMode && isUserInMap(displayOrder, currentUser)) {
       return;
     }
 
@@ -95,14 +109,13 @@ function Widget() {
     displayOrder.set(nextKey.toString(), currentUser);
   };
 
-  const renderTeammatePhotoBubbles = () => {
-    const sortedKeys = parseAndSortKeys(displayOrder);
+  const renderTeammatePhotoBubbles = (syncedMap: SyncedMap) => {
+    const sortedKeys = parseAndSortKeys(syncedMap);
 
     return sortedKeys.map((key) => {
       const user = displayOrder.get(key);
 
       if (user) {
-        console.log(user.name);
         return <TeammatePhotoBubble key={key} figmaUser={user} />;
       }
 
@@ -130,7 +143,7 @@ function Widget() {
         <Button text="Add me" onClick={addUserToDisplay} />
       </AutoLayout>
       <AutoLayout direction="vertical" spacing={20}>
-        {renderTeammatePhotoBubbles()}
+        {renderTeammatePhotoBubbles(displayOrder)}
       </AutoLayout>
     </AutoLayout>
   );
