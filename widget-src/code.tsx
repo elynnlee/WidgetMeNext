@@ -1,5 +1,3 @@
-// This is a counter widget with buttons to increment and decrement the number.
-
 const { widget } = figma;
 const {
   useSyncedState,
@@ -126,8 +124,25 @@ function TeammatePhotoBubbleRow({
     </AutoLayout>
   );
 }
+function parseAndSortKeys(map: SyncedMap<any>): string[] {
+  const parsedKeys: number[] = [];
+
+  for (const key of map.keys()) {
+    const parsedKey = parseFloat(key);
+
+    if (!isNaN(parsedKey)) {
+      parsedKeys.push(parsedKey);
+    }
+  }
+
+  parsedKeys.sort((a, b) => a - b);
+
+  return parsedKeys.map((key) => key.toString());
+}
 
 function Widget() {
+  const debugMode = true;
+
   // List of active users
   const [users, setUsers] = useSyncedState<User[]>("users", () => {
     // uncomment for testing
@@ -143,38 +158,56 @@ function Widget() {
   );
 
   // order to display users
-  const userIdToDisplayOrder = useSyncedMap<number>("displayOrder");
+  // const userIdToDisplayOrder = useSyncedMap<number>("displayOrder");
+
   // map user Ids to User object
   const userIdToUser = useSyncedMap<User>("idToUser");
 
+  const displayOrder = useSyncedMap<User>("displayOrder");
+
   const addUserToDisplay = () => {
     const currentUser = figma.currentUser;
-    if (
-      currentUser &&
-      currentUser.id &&
-      !userIdToDisplayOrder.get(currentUser.id)
-    ) {
-      let orderNum = userIdToDisplayOrder.size + 1;
-      userIdToDisplayOrder.set(currentUser.id, orderNum);
-      userIdToUser.set(currentUser.id, currentUser);
-    }
-  };
 
-  const printNames = () => {
-    const keys = userIdToDisplayOrder.keys();
-    console.log(keys);
-    for (var i = 0; i < keys.length; i++) {
-      let user = userIdToDisplayOrder.get(keys[i]);
-      console.log(user);
-      console.log(userIdToUser.get(keys[i]));
-      let userObj = userIdToUser.get(keys[i]);
-      if (userObj) {
-        return <TeammatePhotoBubble figmaUser={userObj} />;
+    if (!currentUser) {
+      console.log("no current user");
+      return;
+    }
+
+    let largestKey: string | null = null;
+
+    for (const key of displayOrder.keys()) {
+      const parsedKey = parseFloat(key);
+
+      if (
+        !isNaN(parsedKey) &&
+        (largestKey === null || parsedKey > parseFloat(largestKey))
+      ) {
+        largestKey = key;
       }
     }
+
+    const nextKey = largestKey ? largestKey + 1 : 1;
+
+    displayOrder.set(nextKey + "", currentUser);
+    console.log(displayOrder.size);
+    console.log(displayOrder.values());
   };
 
-  const userFromId = (userId: string) => {};
+  const printNames = (): JSX.Element[] => {
+    const sortedKeys = parseAndSortKeys(displayOrder);
+    const teammatePhotoBubbles: JSX.Element[] = [];
+
+    for (let i = 0; i < sortedKeys.length; i++) {
+      const user = displayOrder.get(sortedKeys[i]);
+
+      if (user) {
+        console.log(user.name);
+        teammatePhotoBubbles.push(<TeammatePhotoBubble figmaUser={user} />);
+      }
+    }
+
+    return teammatePhotoBubbles;
+  };
 
   return (
     <AutoLayout
