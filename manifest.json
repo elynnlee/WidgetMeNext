@@ -10,6 +10,6 @@
   "widgetApi": "1.0.0",
   "permissions": ["currentuser", "activeusers"],
   "networkAccess": {
-    "allowedDomains": ["*.figma.com"]
+    "allowedDomains": ["https://*.figma.com"]
   }
 }

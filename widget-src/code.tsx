@@ -41,7 +41,7 @@ function TeammatePhotoBubble({
   return (
     <AutoLayout
       direction="horizontal"
-      horizontalAlignItems="center"
+      horizontalAlignItems="start"
       verticalAlignItems="center"
       spacing={12}
     >
@@ -62,6 +62,7 @@ function TeammatePhotoBubble({
           />
         )}
       </AutoLayout>
+      {/* TODO: handle really long names / text resizing */}
       <Text width={textWidth} horizontalAlignText="left" fontSize={fontSize}>
         {isActive ? `${name}, it's your turn!` : name}
       </Text>
@@ -146,36 +147,60 @@ function Widget() {
       direction="vertical"
       fill="#FFFFFF"
       stroke="#E6E6E6"
-      horizontalAlignItems="center"
-      verticalAlignItems="center"
+      // horizontalAlignItems="center"
+      // verticalAlignItems="center"
+      width={500}
       spacing={20}
       cornerRadius={10}
       padding={{ top: 40, left: 20, right: 20, bottom: 40 }}
     >
+      {/* Empty state */}
+      {/* {displayOrder.size < 1 && (
+        <AutoLayout>
+          <Text>{`It's quiet in here! Click the button to join`}</Text>
+        </AutoLayout>
+      )} */}
+      {/* There's someone whose turn it is */}
       {displayOrder.size > 0 && (
         <AutoLayout
-          direction="vertical"
-          spacing={20}
+          direction="horizontal"
+          spacing="auto"
           horizontalAlignItems="center"
+          verticalAlignItems="center"
+          width={"fill-parent"}
         >
           <TeammatePhotoBubble
             key={getFirstUserKey(displayOrder)}
             figmaUser={displayOrder.get(getFirstUserKey(displayOrder))}
+            isActive={true}
           />
-          <Button text="Next" onClick={removeUserFromDisplay} />
+          {displayOrder.size > 0 ? (
+            <Button text="Next" onClick={removeUserFromDisplay} />
+          ) : (
+            <></>
+          )}
         </AutoLayout>
       )}
+      {displayOrder.size === 1 && (
+        <AutoLayout direction="vertical" spacing="auto">
+          <Text>{`Click the button to add yourself to the list.`}</Text>
+        </AutoLayout>
+      )}
+      {/* People waiting in line */}
       {displayOrder.size > 1 && (
         <AutoLayout direction="vertical" spacing={20}>
+          <Text>{`Who's up next?`}</Text>
           {renderTeammatePhotoBubbles(displayOrder)}
         </AutoLayout>
       )}
+
+      {/* Button to join list */}
       <AutoLayout
         direction="vertical"
         spacing={20}
         horizontalAlignItems="center"
       >
-        <Button text="Add me to the list" onClick={addUserToDisplay} />
+        <Button text="Join the list" onClick={addUserToDisplay} />
       </AutoLayout>
     </AutoLayout>
   );
