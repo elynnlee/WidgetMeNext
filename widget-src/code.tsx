@@ -44,6 +44,7 @@ function TeammatePhotoBubble({
       horizontalAlignItems="start"
       verticalAlignItems="center"
       spacing={12}
+      width="fill-parent"
     >
       <AutoLayout stroke="#2a2a2a" cornerRadius={100}>
         {photoUrl ? (
@@ -63,9 +64,15 @@ function TeammatePhotoBubble({
         )}
       </AutoLayout>
       {/* TODO: handle really long names / text resizing */}
-      <Text width={textWidth} horizontalAlignText="left" fontSize={fontSize}>
-        {isActive ? `${name}, it's your turn!` : name}
-      </Text>
+      <AutoLayout width="fill-parent">
+        <Text
+          width="fill-parent"
+          // horizontalAlignText="left"
+          fontSize={fontSize}
+        >
+          {isActive ? `${name}, it's your turn!` : name}
+        </Text>
+      </AutoLayout>
     </AutoLayout>
   );
 }
