@@ -65,11 +65,7 @@ function TeammatePhotoBubble({
       </AutoLayout>
       {/* TODO: handle really long names / text resizing */}
       <AutoLayout width="fill-parent">
-        <Text
-          width="fill-parent"
-          // horizontalAlignText="left"
-          fontSize={fontSize}
-        >
+        <Text fontSize={fontSize} width="fill-parent">
           {isActive ? `${name}, it's your turn!` : name}
         </Text>
       </AutoLayout>
@@ -92,6 +88,44 @@ function parseAndSortKeys(map: SyncedMap<any>) {
   );
   parsedKeys.sort((a, b) => a - b);
   return parsedKeys.map((key) => key.toString());
+}
+
+function TeammatePhotoBubbleRow({
+  user1 = undefined,
+  user2 = undefined,
+  user3 = undefined,
+}: {
+  key?: any;
+  user1?: User | undefined;
+  user2?: User | undefined;
+  user3?: User | undefined;
+}) {
+  return (
+    <AutoLayout
+      direction={"horizontal"}
+      // verticalAlignItems="center"
+      // horizontalAlignItems="center"
+      spacing={30}
+      padding={{ bottom: 10, top: 10 }}
+      width={"fill-parent"}
+    >
+      {user1 ? (
+        <TeammatePhotoBubble figmaUser={user1} />
+      ) : (
+        <AutoLayout width="fill-parent" height={1} />
+      )}
+      {user2 ? (
+        <TeammatePhotoBubble figmaUser={user2} />
+      ) : (
+        <AutoLayout width="fill-parent" height={1} />
+      )}
+      {user3 ? (
+        <TeammatePhotoBubble figmaUser={user3} />
+      ) : (
+        <AutoLayout width="fill-parent" height={1} />
+      )}
+    </AutoLayout>
+  );
 }
 
 function Widget() {
@@ -149,29 +183,47 @@ function Widget() {
     return smallestKey.toString();
   };
 
+  const getWaitingUsers = (syncedMap: SyncedMap) => {
+    const smallestKey = Math.min(...displayOrder.keys().map(parseFloat));
+    const largestKey = Math.max(...displayOrder.keys().map(parseFloat), 0);
+    let nextKey = smallestKey + 1;
+
+    let userArray: Array<User> = [];
+
+    // Iterate through the Map starting from the second element
+    let isFirstElement = true;
+    for (const [key, user] of displayOrder.entries()) {
+      if (!isFirstElement) {
+        userArray.push(user);
+      } else {
+        isFirstElement = false;
+      }
+    }
+
+    return userArray;
+  };
+
   return (
     <AutoLayout
       direction="vertical"
       fill="#FFFFFF"
       stroke="#E6E6E6"
-      // horizontalAlignItems="center"
-      // verticalAlignItems="center"
       width={500}
       spacing={20}
       cornerRadius={10}
       padding={{ top: 40, left: 20, right: 20, bottom: 40 }}
     >
       {/* Empty state */}
-      {/* {displayOrder.size < 1 && (
+      {displayOrder.size < 1 && (
         <AutoLayout>
-          <Text>{`It's quiet in here! Click the button to join`}</Text>
+          <Text>{`Click the button to add yourself ot the list.`}</Text>
         </AutoLayout>
-      )} */}
+      )}
       {/* There's someone whose turn it is */}
       {displayOrder.size > 0 && (
         <AutoLayout
           direction="horizontal"
-          spacing="auto"
+          spacing={20}
           horizontalAlignItems="center"
           verticalAlignItems="center"
           width={"fill-parent"}
@@ -189,24 +241,37 @@ function Widget() {
         </AutoLayout>
       )}
       {displayOrder.size === 1 && (
-        <AutoLayout direction="vertical" spacing="auto">
+        <AutoLayout direction="vertical">
           <Text>{`Click the button to add yourself to the list.`}</Text>
         </AutoLayout>
       )}
       {/* People waiting in line */}
       {displayOrder.size > 1 && (
-        <AutoLayout direction="vertical" spacing={20}>
-          <Text>{`Who's up next?`}</Text>
-          {renderTeammatePhotoBubbles(displayOrder)}
+        <AutoLayout spacing={20} width={"fill-parent"} direction="vertical">
+          <AutoLayout direction="vertical" spacing={20}>
+            <Text>{`Who's up next?`}</Text>
+          </AutoLayout>
+
+          <AutoLayout direction={"vertical"} width={"fill-parent"}>
+            {getWaitingUsers(displayOrder).map((user, idx, users) => {
+              if (idx % 3 != 0) {
+                return null;
+              }
+              return (
+                <TeammatePhotoBubbleRow
+                  key={idx}
+                  user1={users[idx]}
+                  user2={users[idx + 1]}
+                  user3={users[idx + 2]}
+                />
+              );
+            })}
+          </AutoLayout>
         </AutoLayout>
       )}
 
       {/* Button to join list */}
-      <AutoLayout
-        direction="vertical"
-        spacing={20}
-        horizontalAlignItems="center"
-      >
+      <AutoLayout>
         <Button text="Join the list" onClick={addUserToDisplay} />
       </AutoLayout>
     </AutoLayout>
