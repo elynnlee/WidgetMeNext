@@ -38,10 +38,14 @@ function TeammatePhotoBubble({
   figmaUser,
   isActive = false,
   hasGone = false,
+  orderNumber,
+  showOrderNumber = true,
 }: {
   figmaUser: User;
   isActive?: boolean;
   hasGone?: boolean;
+  orderNumber?: number;
+  showOrderNumber?: boolean;
 }) {
   const { photoUrl, name } = figmaUser;
   const diameter = isActive ? 50 : 30;
@@ -55,8 +59,15 @@ function TeammatePhotoBubble({
       verticalAlignItems="center"
       spacing={12}
       width="fill-parent"
+      // there's an API bug, unclear why this fixes things
+      key={showOrderNumber + ""}
       opacity={hasGone ? 0.5 : 1}
     >
+      {!isActive && !hasGone && showOrderNumber && (
+        <AutoLayout minWidth={20}>
+          <Text>{orderNumber}</Text>
+        </AutoLayout>
+      )}
       <AutoLayout stroke="#2a2a2a" cornerRadius={100}>
         {photoUrl ? (
           <Image
@@ -106,12 +117,16 @@ function TeammatePhotoBubbleRow({
   user2 = undefined,
   user3 = undefined,
   hasGone = false,
+  index = 0,
+  showOrderNumber = true,
 }: {
   key?: any;
   user1?: User | undefined;
   user2?: User | undefined;
   user3?: User | undefined;
   hasGone?: boolean;
+  index?: number;
+  showOrderNumber?: boolean;
 }) {
   return (
     <AutoLayout
@@ -123,17 +138,32 @@ function TeammatePhotoBubbleRow({
       width={"fill-parent"}
     >
       {user1 ? (
-        <TeammatePhotoBubble figmaUser={user1} hasGone={hasGone} />
+        <TeammatePhotoBubble
+          figmaUser={user1}
+          hasGone={hasGone}
+          orderNumber={index + 1}
+          showOrderNumber={showOrderNumber}
+        />
       ) : (
         <AutoLayout width="fill-parent" height={1} />
       )}
       {user2 ? (
-        <TeammatePhotoBubble figmaUser={user2} hasGone={hasGone} />
+        <TeammatePhotoBubble
+          figmaUser={user2}
+          hasGone={hasGone}
+          orderNumber={index + 2}
+          showOrderNumber={showOrderNumber}
+        />
       ) : (
         <AutoLayout width="fill-parent" height={1} />
       )}
       {user3 ? (
-        <TeammatePhotoBubble figmaUser={user3} hasGone={hasGone} />
+        <TeammatePhotoBubble
+          figmaUser={user3}
+          hasGone={hasGone}
+          orderNumber={index + 3}
+          showOrderNumber={showOrderNumber}
+        />
       ) : (
         <AutoLayout width="fill-parent" height={1} />
       )}
@@ -148,6 +178,10 @@ function Widget() {
   const [showGoneOrder, setShowGoneOrder] = useSyncedState<boolean>(
     "showGoneOrder",
     false
+  );
+  const [showOrderNumber, setShowOrderNumber] = useSyncedState<boolean>(
+    "showOrderNumber",
+    true
   );
 
   const debugMode = false;
@@ -183,6 +217,12 @@ function Widget() {
     goneOrder.set(smallestKey.toString(), userToRemove);
 
     displayOrder.delete(smallestKey.toString());
+  };
+
+  const addUsersToDisplayDebugMode = () => {
+    for (let i = 0; i < 10; i++) {
+      addUserToDisplay();
+    }
   };
 
   const renderTeammatePhotoBubbles = (syncedMap: SyncedMap<User>) => {
@@ -243,14 +283,26 @@ function Widget() {
       },
       (displayOrder.size !== 0 || goneOrder.size > 0) &&
         !showGoneOrder && {
-          tooltip: "Show previous participants",
+          tooltip: "Show history",
           propertyName: "show-prev-users",
           itemType: "action",
         },
       (displayOrder.size !== 0 || goneOrder.size > 0) &&
         showGoneOrder && {
-          tooltip: "Hide previous participants",
+          tooltip: "Hide history",
           propertyName: "hide-prev-users",
+          itemType: "action",
+        },
+      displayOrder.size !== 0 &&
+        showOrderNumber && {
+          tooltip: "Hide numbers",
+          propertyName: "hide-order-number",
+          itemType: "action",
+        },
+      displayOrder.size !== 0 &&
+        !showOrderNumber && {
+          tooltip: "Show numbers",
+          propertyName: "show-order-number",
           itemType: "action",
         },
     ].filter(Boolean) as WidgetPropertyMenuItem[],
@@ -261,6 +313,10 @@ function Widget() {
         setShowGoneOrder(true);
       } else if (e.propertyName === "hide-prev-users") {
         setShowGoneOrder(false);
+      } else if (e.propertyName === "show-order-number") {
+        setShowOrderNumber(true);
+      } else if (e.propertyName === "hide-order-number") {
+        setShowOrderNumber(false);
       } else {
         // resetAll();
       }
@@ -272,7 +328,7 @@ function Widget() {
       direction="vertical"
       fill="#FFFFFF"
       stroke="#E6E6E6"
-      width={500}
+      width={600}
       minHeight={220}
       spacing={20}
       cornerRadius={10}
@@ -330,6 +386,8 @@ function Widget() {
                   user1={users[idx]}
                   user2={users[idx + 1]}
                   user3={users[idx + 2]}
+                  index={idx}
+                  showOrderNumber={showOrderNumber}
                 />
               );
             })}
@@ -342,11 +400,21 @@ function Widget() {
         <Button text="Join the list" onClick={addUserToDisplay} />
       </AutoLayout>
 
+      {/* Button to join list debug mode */}
+      {debugMode && (
+        <AutoLayout>
+          <Button
+            text="add users (Debug)"
+            onClick={addUsersToDisplayDebugMode}
+          />
+        </AutoLayout>
+      )}
+
       {/* Users who have gone */}
       {showGoneOrder && goneOrder.size > 0 && (
         <AutoLayout spacing={8} width={"fill-parent"} direction="vertical">
           <AutoLayout direction="vertical" spacing={20}>
-            <Text fontSize={12}>{`Who's already gone?`}</Text>
+            <Text fontSize={12}>{`Turn history`}</Text>
           </AutoLayout>
 
           <AutoLayout direction={"vertical"} width={"fill-parent"}>
