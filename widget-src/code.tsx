@@ -190,6 +190,10 @@ function Widget() {
     displayOrder.keys().forEach((k) => displayOrder.delete(k));
   };
 
+  const resetGoneOrder = () => {
+    goneOrder.keys().forEach((k) => goneOrder.delete(k));
+  };
+
   const addUserToDisplay = () => {
     const currentUser = figma.currentUser;
     if (!currentUser) {
@@ -277,7 +281,7 @@ function Widget() {
   usePropertyMenu(
     [
       displayOrder.size !== 0 && {
-        tooltip: "Clear participant list",
+        tooltip: "Reset list",
         propertyName: "clear",
         itemType: "action",
       },
@@ -309,6 +313,7 @@ function Widget() {
     (e) => {
       if (e.propertyName === "clear") {
         resetDisplayOrder();
+        resetGoneOrder();
       } else if (e.propertyName === "show-prev-users") {
         setShowGoneOrder(true);
       } else if (e.propertyName === "hide-prev-users") {
@@ -413,7 +418,19 @@ function Widget() {
       {/* Users who have gone */}
       {showGoneOrder && goneOrder.size > 0 && (
         <AutoLayout spacing={8} width={"fill-parent"} direction="vertical">
-          <AutoLayout direction="vertical" spacing={20}>
+          <AutoLayout
+            fill={"#8c8c8c"}
+            width={500}
+            height={1}
+            cornerRadius={50}
+            opacity={0.5}
+          />
+          <AutoLayout
+            direction="vertical"
+            spacing={20}
+            opacity={0.5}
+            padding={{ top: 10 }}
+          >
             <Text fontSize={12}>{`Turn history`}</Text>
           </AutoLayout>
 
