@@ -1,5 +1,13 @@
 const { widget } = figma;
-const { useSyncedState, AutoLayout, Text, Image, Frame, useSyncedMap } = widget;
+const {
+  useSyncedState,
+  AutoLayout,
+  Text,
+  Image,
+  Frame,
+  useSyncedMap,
+  usePropertyMenu,
+} = widget;
 
 function Button({
   text,
@@ -29,9 +37,11 @@ function Button({
 function TeammatePhotoBubble({
   figmaUser,
   isActive = false,
+  hasGone = false,
 }: {
   figmaUser: User;
   isActive?: boolean;
+  hasGone?: boolean;
 }) {
   const { photoUrl, name } = figmaUser;
   const diameter = isActive ? 50 : 30;
@@ -45,6 +55,7 @@ function TeammatePhotoBubble({
       verticalAlignItems="center"
       spacing={12}
       width="fill-parent"
+      opacity={hasGone ? 0.5 : 1}
     >
       <AutoLayout stroke="#2a2a2a" cornerRadius={100}>
         {photoUrl ? (
@@ -94,11 +105,13 @@ function TeammatePhotoBubbleRow({
   user1 = undefined,
   user2 = undefined,
   user3 = undefined,
+  hasGone = false,
 }: {
   key?: any;
   user1?: User | undefined;
   user2?: User | undefined;
   user3?: User | undefined;
+  hasGone?: boolean;
 }) {
   return (
     <AutoLayout
@@ -110,17 +123,17 @@ function TeammatePhotoBubbleRow({
       width={"fill-parent"}
     >
       {user1 ? (
-        <TeammatePhotoBubble figmaUser={user1} />
+        <TeammatePhotoBubble figmaUser={user1} hasGone={hasGone} />
       ) : (
         <AutoLayout width="fill-parent" height={1} />
       )}
       {user2 ? (
-        <TeammatePhotoBubble figmaUser={user2} />
+        <TeammatePhotoBubble figmaUser={user2} hasGone={hasGone} />
       ) : (
         <AutoLayout width="fill-parent" height={1} />
       )}
       {user3 ? (
-        <TeammatePhotoBubble figmaUser={user3} />
+        <TeammatePhotoBubble figmaUser={user3} hasGone={hasGone} />
       ) : (
         <AutoLayout width="fill-parent" height={1} />
       )}
@@ -130,9 +143,18 @@ function TeammatePhotoBubbleRow({
 
 function Widget() {
   const displayOrder = useSyncedMap<User>("displayOrder");
+  const goneOrder = useSyncedMap<User>("goneOrder");
   const userIdToUser = useSyncedMap("idToUser");
+  const [showGoneOrder, setShowGoneOrder] = useSyncedState<boolean>(
+    "showGoneOrder",
+    false
+  );
 
   const debugMode = false;
+
+  const resetDisplayOrder = () => {
+    displayOrder.keys().forEach((k) => displayOrder.delete(k));
+  };
 
   const addUserToDisplay = () => {
     const currentUser = figma.currentUser;
@@ -153,6 +175,13 @@ function Widget() {
 
   const removeUserFromDisplay = () => {
     const smallestKey = Math.min(...displayOrder.keys().map(parseFloat));
+
+    const userToRemove = displayOrder.get(smallestKey.toString());
+    if (!userToRemove) {
+      return;
+    }
+    goneOrder.set(smallestKey.toString(), userToRemove);
+
     displayOrder.delete(smallestKey.toString());
   };
 
@@ -183,25 +212,60 @@ function Widget() {
     return smallestKey.toString();
   };
 
-  const getWaitingUsers = (syncedMap: SyncedMap<User>) => {
-    const smallestKey = Math.min(...displayOrder.keys().map(parseFloat));
-    const largestKey = Math.max(...displayOrder.keys().map(parseFloat), 0);
-    let nextKey = smallestKey + 1;
+  const getRemainingUsers = (
+    syncedMap: SyncedMap<User>,
+    usersToSkip: number
+  ) => {
+    const smallestKey = Math.min(...syncedMap.keys().map(parseFloat));
 
     let userArray: Array<User> = [];
 
     // Iterate through the Map starting from the second element
     let isFirstElement = true;
-    for (const [key, user] of displayOrder.entries()) {
-      if (!isFirstElement) {
+    let skipped = 0;
+    for (const [key, user] of syncedMap.entries()) {
+      if (skipped === usersToSkip) {
         userArray.push(user);
       } else {
-        isFirstElement = false;
+        skipped = skipped + 1;
       }
     }
 
     return userArray;
   };
+
+  usePropertyMenu(
+    [
+      displayOrder.size !== 0 && {
+        tooltip: "Clear participant list",
+        propertyName: "clear",
+        itemType: "action",
+      },
+      (displayOrder.size !== 0 || goneOrder.size > 0) &&
+        !showGoneOrder && {
+          tooltip: "Show previous participants",
+          propertyName: "show-prev-users",
+          itemType: "action",
+        },
+      (displayOrder.size !== 0 || goneOrder.size > 0) &&
+        showGoneOrder && {
+          tooltip: "Hide previous participants",
+          propertyName: "hide-prev-users",
+          itemType: "action",
+        },
+    ].filter(Boolean) as WidgetPropertyMenuItem[],
+    (e) => {
+      if (e.propertyName === "clear") {
+        resetDisplayOrder();
+      } else if (e.propertyName === "show-prev-users") {
+        setShowGoneOrder(true);
+      } else if (e.propertyName === "hide-prev-users") {
+        setShowGoneOrder(false);
+      } else {
+        // resetAll();
+      }
+    }
+  );
 
   return (
     <AutoLayout
@@ -212,7 +276,7 @@ function Widget() {
       minHeight={220}
       spacing={20}
       cornerRadius={10}
-      padding={{ top: 40, left: 20, right: 20, bottom: 40 }}
+      padding={{ top: 40, left: 40, right: 40, bottom: 40 }}
     >
       {/* Empty state */}
       {displayOrder.size < 1 && (
@@ -250,13 +314,13 @@ function Widget() {
       )}
       {/* People waiting in line */}
       {displayOrder.size > 1 && (
-        <AutoLayout spacing={10} width={"fill-parent"} direction="vertical">
+        <AutoLayout spacing={8} width={"fill-parent"} direction="vertical">
           <AutoLayout direction="vertical" spacing={20}>
             <Text>{`Who's up next?`}</Text>
           </AutoLayout>
 
           <AutoLayout direction={"vertical"} width={"fill-parent"}>
-            {getWaitingUsers(displayOrder).map((user, idx, users) => {
+            {getRemainingUsers(displayOrder, 1).map((user, idx, users) => {
               if (idx % 3 != 0) {
                 return null;
               }
@@ -277,6 +341,32 @@ function Widget() {
       <AutoLayout>
         <Button text="Join the list" onClick={addUserToDisplay} />
       </AutoLayout>
+
+      {/* Users who have gone */}
+      {showGoneOrder && goneOrder.size > 0 && (
+        <AutoLayout spacing={8} width={"fill-parent"} direction="vertical">
+          <AutoLayout direction="vertical" spacing={20}>
+            <Text fontSize={12}>{`Who's already gone?`}</Text>
+          </AutoLayout>
+
+          <AutoLayout direction={"vertical"} width={"fill-parent"}>
+            {getRemainingUsers(goneOrder, 0).map((user, idx, users) => {
+              if (idx % 3 != 0) {
+                return null;
+              }
+              return (
+                <TeammatePhotoBubbleRow
+                  key={idx}
+                  user1={users[idx]}
+                  user2={users[idx + 1]}
+                  user3={users[idx + 2]}
+                  hasGone={true}
+                />
+              );
+            })}
+          </AutoLayout>
+        </AutoLayout>
+      )}
     </AutoLayout>
   );
 }
