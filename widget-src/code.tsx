@@ -3,7 +3,7 @@ const { useSyncedState, AutoLayout, Text, Image, Frame, useSyncedMap } = widget;
 
 function Button({
   text,
-  textSize = 14,
+  textSize = 12,
   onClick,
 }: {
   text: string;
@@ -13,7 +13,7 @@ function Button({
   return (
     <AutoLayout
       stroke="#2a2a2a"
-      strokeWidth={2}
+      strokeWidth={1}
       cornerRadius={100}
       padding={10}
       spacing={10}
@@ -36,7 +36,7 @@ function TeammatePhotoBubble({
   const { photoUrl, name } = figmaUser;
   const diameter = isActive ? 50 : 30;
   const textWidth = isActive ? undefined : 80;
-  const fontSize = isActive ? 20 : 12;
+  const fontSize = isActive ? 16 : 12;
 
   return (
     <AutoLayout
@@ -73,7 +73,7 @@ function TeammatePhotoBubble({
   );
 }
 
-function isUserInMap(userMap: SyncedMap, user: User): boolean {
+function isUserInMap(userMap: SyncedMap<User>, user: User): boolean {
   for (const existingUser of userMap.values()) {
     if (existingUser.id === user.id) {
       return true;
@@ -129,7 +129,7 @@ function TeammatePhotoBubbleRow({
 }
 
 function Widget() {
-  const displayOrder = useSyncedMap("displayOrder");
+  const displayOrder = useSyncedMap<User>("displayOrder");
   const userIdToUser = useSyncedMap("idToUser");
 
   const debugMode = false;
@@ -156,7 +156,7 @@ function Widget() {
     displayOrder.delete(smallestKey.toString());
   };
 
-  const renderTeammatePhotoBubbles = (syncedMap: SyncedMap) => {
+  const renderTeammatePhotoBubbles = (syncedMap: SyncedMap<User>) => {
     const sortedKeys = parseAndSortKeys(syncedMap);
 
     // skip the first user because we'll render them separately
@@ -178,12 +178,12 @@ function Widget() {
     });
   };
 
-  const getFirstUserKey = (syncedMap: SyncedMap) => {
+  const getFirstUserKey = (syncedMap: SyncedMap<User>) => {
     const smallestKey = Math.min(...displayOrder.keys().map(parseFloat));
     return smallestKey.toString();
   };
 
-  const getWaitingUsers = (syncedMap: SyncedMap) => {
+  const getWaitingUsers = (syncedMap: SyncedMap<User>) => {
     const smallestKey = Math.min(...displayOrder.keys().map(parseFloat));
     const largestKey = Math.max(...displayOrder.keys().map(parseFloat), 0);
     let nextKey = smallestKey + 1;
@@ -209,14 +209,15 @@ function Widget() {
       fill="#FFFFFF"
       stroke="#E6E6E6"
       width={500}
+      minHeight={220}
       spacing={20}
       cornerRadius={10}
       padding={{ top: 40, left: 20, right: 20, bottom: 40 }}
     >
       {/* Empty state */}
       {displayOrder.size < 1 && (
-        <AutoLayout>
-          <Text>{`Click the button to add yourself ot the list.`}</Text>
+        <AutoLayout height={85} verticalAlignItems="center">
+          <Text>{`Click the button to add yourself to the list.`}</Text>
         </AutoLayout>
       )}
       {/* There's someone whose turn it is */}
@@ -230,7 +231,7 @@ function Widget() {
         >
           <TeammatePhotoBubble
             key={getFirstUserKey(displayOrder)}
-            figmaUser={displayOrder.get(getFirstUserKey(displayOrder))}
+            figmaUser={displayOrder.get(getFirstUserKey(displayOrder))!}
             isActive={true}
           />
           {displayOrder.size > 0 ? (
@@ -242,12 +243,14 @@ function Widget() {
       )}
       {displayOrder.size === 1 && (
         <AutoLayout direction="vertical">
-          <Text>{`Click the button to add yourself to the list.`}</Text>
+          <Text
+            fontSize={12}
+          >{`Click the button to add yourself to the list.`}</Text>
         </AutoLayout>
       )}
       {/* People waiting in line */}
       {displayOrder.size > 1 && (
-        <AutoLayout spacing={20} width={"fill-parent"} direction="vertical">
+        <AutoLayout spacing={10} width={"fill-parent"} direction="vertical">
           <AutoLayout direction="vertical" spacing={20}>
             <Text>{`Who's up next?`}</Text>
           </AutoLayout>
